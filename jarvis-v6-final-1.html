@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#010912">
+<title>J.A.R.V.I.S</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes spinR{to{transform:rotate(-360deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 10px #00d4ff,0 0 20px rgba(0,212,255,0.3)}50%{box-shadow:0 0 30px #00d4ff,0 0 60px rgba(0,212,255,0.5)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.1}}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:0.8}50%{transform:scale(1.08);opacity:1}}
+@keyframes scan{0%{top:-5%}100%{top:108%}}
+@keyframes wave{0%,100%{transform:scaleY(0.2)}50%{transform:scaleY(1)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes typB{0%,60%,100%{transform:translateY(0);opacity:0.2}30%{transform:translateY(-5px);opacity:1}}
+@keyframes ringPulse{0%,100%{transform:scale(1);opacity:0.6}50%{transform:scale(1.05);opacity:1}}
+@keyframes dataFlow{0%{stroke-dashoffset:1000}100%{stroke-dashoffset:0}}
+@keyframes orbitDot{0%{opacity:0.3}50%{opacity:1}100%{opacity:0.3}}
+@keyframes voiceRing{0%{transform:scale(0.95);opacity:0.5}50%{transform:scale(1.08);opacity:1}100%{transform:scale(0.95);opacity:0.5}}
+::-webkit-scrollbar{width:2px}::-webkit-scrollbar-thumb{background:rgba(0,180,255,0.2)}
+html,body{width:100%;height:100%;overflow:hidden}
+body{background:#010912;color:#8ecae6;font-family:'Share Tech Mono',monospace;display:flex;flex-direction:column}
+
+/* BG */
+.bg{position:fixed;inset:0;background-image:linear-gradient(rgba(0,180,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,180,255,0.02) 1px,transparent 1px);background-size:24px 24px;pointer-events:none;z-index:0}
+.bgGlow{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:120vw;height:120vw;background:radial-gradient(ellipse,rgba(0,80,160,0.06) 0%,transparent 60%);pointer-events:none;z-index:0;animation:pulse 6s ease-in-out infinite}
+.scanline{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:999}
+.scanline::after{content:'';position:absolute;left:0;right:0;height:2%;background:linear-gradient(transparent,rgba(0,200,255,0.03),transparent);animation:scan 6s linear infinite}
+
+/* HEADER */
+.hdr{background:rgba(1,6,20,0.98);border-bottom:1px solid rgba(0,180,255,0.18);padding:6px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;z-index:10;position:relative}
+.reactor{width:34px;height:34px;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.reactor::before{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid #00d4ff;border-top-color:transparent;border-right-color:transparent;animation:spin 2s linear infinite}
+.reactor::after{content:'';position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(0,212,255,0.3);border-bottom-color:transparent;animation:spinR 1.5s linear infinite}
+.rCore{width:10px;height:10px;background:radial-gradient(#fff,#00d4ff);border-radius:50%;animation:glow 2s ease-in-out infinite}
+.hTitle h1{font-family:Orbitron;font-size:13px;font-weight:900;letter-spacing:4px;color:#00d4ff;text-shadow:0 0 12px #00d4ff}
+.hTitle p{font-size:6px;letter-spacing:2px;color:#c8943a;margin-top:1px}
+.dot{width:5px;height:5px;border-radius:50%;animation:blink 1.5s infinite}
+
+/* TABS */
+.tabs{display:flex;background:rgba(1,6,20,0.98);border-bottom:1px solid rgba(0,180,255,0.1);flex-shrink:0;z-index:10;overflow-x:auto}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:5px 8px;text-align:center;font-size:6px;letter-spacing:1px;cursor:pointer;border-bottom:2px solid transparent;color:#2a4060;white-space:nowrap;transition:all 0.2s}
+.tab.active{color:#00d4ff;border-bottom-color:#00d4ff}
+.tIco{font-size:12px;display:block;margin-bottom:1px}
+
+/* MAIN DASHBOARD */
+#tab-dashboard{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.dashCanvas{position:absolute;inset:0;z-index:0}
+
+/* VOICE RING */
+.voiceRingWrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;display:flex;align-items:center;justify-content:center}
+.voiceRing{position:relative;display:flex;align-items:center;justify-content:center}
+.vRing{position:absolute;border-radius:50%;border:1px solid rgba(0,212,255,0.3);animation:ringPulse 3s ease-in-out infinite}
+.vRingInner{width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,0.15) 0%,rgba(0,100,180,0.08) 50%,transparent 100%);border:2px solid rgba(0,212,255,0.5);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;position:relative;z-index:2}
+.vRingInner.listening{border-color:#ff4444;background:radial-gradient(circle,rgba(255,60,60,0.2) 0%,transparent 70%);animation:voiceRing 0.6s ease-in-out infinite}
+.vRingInner.speaking{border-color:#00ff88;background:radial-gradient(circle,rgba(0,255,136,0.15) 0%,transparent 70%);animation:voiceRing 1s ease-in-out infinite}
+.vIcon{font-size:28px;z-index:3}
+.wBars{display:flex;gap:2px;align-items:center;height:24px;position:absolute;bottom:-30px}
+.wb{width:3px;border-radius:2px;background:#00d4ff;box-shadow:0 0 3px #00d4ff}
+
+/* DASHBOARD OVERLAY PANELS */
+.dashOverlay{position:absolute;inset:0;z-index:4;pointer-events:none}
+.dashPanel{position:absolute;background:rgba(1,8,22,0.85);border:1px solid rgba(0,180,255,0.2);padding:8px;pointer-events:auto;backdrop-filter:blur(4px)}
+
+/* CHAT OVERLAY */
+.chatOverlay{position:absolute;bottom:0;left:0;right:0;z-index:6;background:rgba(1,6,20,0.95);border-top:1px solid rgba(0,180,255,0.2);transition:height 0.3s;height:42px;overflow:hidden}
+.chatOverlay.open{height:55%}
+.chatToggle{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;border-bottom:1px solid rgba(0,180,255,0.1)}
+.chatMessages{height:calc(100% - 90px);overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.chatInput{padding:6px 10px;display:flex;gap:6px;border-top:1px solid rgba(0,180,255,0.1)}
+
+/* COMMON */
+.scroll{flex:1;overflow-y:auto;padding:10px}
+.panel{background:rgba(0,10,24,0.9);border:1px solid rgba(0,180,255,0.15);margin-bottom:8px}
+.sHead{font-size:8px;letter-spacing:3px;color:#00d4ff;margin-bottom:10px}
+inp,textarea,select{background:rgba(0,180,255,0.04);border:1px solid rgba(0,180,255,0.15);border-bottom:1px solid #00d4ff;color:#a0d8ef;font-family:'Share Tech Mono',monospace;font-size:12px;padding:7px 9px;outline:none;width:100%;margin-bottom:7px}
+select option{background:#010912}
+.lbl{font-size:7px;letter-spacing:1px;color:#3a6080;display:block;margin-bottom:3px}
+.btn{background:rgba(0,180,255,0.08);border:1px solid #00d4ff;color:#00d4ff;padding:8px;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;cursor:pointer;width:100%;margin-bottom:5px}
+.btnGold{background:rgba(212,168,67,0.08);border-color:#d4a843;color:#d4a843}
+.btnGreen{background:rgba(0,255,136,0.06);border-color:#00ff88;color:#00ff88}
+.btnRed{background:rgba(255,60,60,0.08);border-color:#ff4444;color:#ff4444}
+.btnSm{background:transparent;border:1px solid;font-size:7px;padding:2px 7px;cursor:pointer;font-family:'Share Tech Mono',monospace}
+.card{background:rgba(0,10,24,0.9);border:1px solid rgba(0,180,255,0.15);border-left:2px solid #00d4ff;padding:9px 11px;margin-bottom:7px;animation:slideUp 0.3s ease}
+.cardGold{border-left-color:#d4a843}
+.cardGreen{border-left-color:#00ff88}
+
+/* CHAT MSGS */
+.msg{display:flex;gap:6px;animation:msgIn 0.2s ease}
+.msg.user{flex-direction:row-reverse}
+.mIco{width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:6px;margin-top:2px}
+.msg.jarvis .mIco{border:1px solid #00d4ff;color:#00d4ff;background:rgba(0,212,255,0.06)}
+.msg.user .mIco{border:1px solid #d4a843;color:#d4a843;background:rgba(212,168,67,0.06)}
+.mBody{max-width:84%}
+.mName{font-size:6px;letter-spacing:1px;color:#2a4060;margin-bottom:2px}
+.msg.user .mName{text-align:right}
+.mTxt{padding:7px 10px;font-size:12px;line-height:1.65;font-family:system-ui,sans-serif}
+.msg.jarvis .mTxt{background:rgba(0,180,255,0.05);border:1px solid rgba(0,180,255,0.18);border-left:2px solid #00d4ff;color:#a0d8ef}
+.msg.user .mTxt{background:rgba(212,168,67,0.05);border:1px solid rgba(212,168,67,0.18);border-right:2px solid #d4a843;color:#e8d090;text-align:right}
+.typing{display:flex;gap:4px;padding:8px 10px;background:rgba(0,180,255,0.05);border:1px solid rgba(0,180,255,0.18);border-left:2px solid #00d4ff;align-items:center}
+.typing span{width:4px;height:4px;border-radius:50%;background:#00d4ff;animation:typB 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+
+/* STATBARS */
+.sBar{margin-bottom:5px}
+.sBarH{display:flex;justify-content:space-between;font-size:7px;margin-bottom:2px}
+.sBarBg{height:2px;background:rgba(255,255,255,0.04)}
+.sBarFill{height:100%;transition:width 1.5s ease}
+
+/* MOOD */
+.moodBtn{flex:1;padding:8px;background:transparent;border:1px solid rgba(0,180,255,0.15);cursor:pointer;font-size:18px;transition:all 0.2s}
+.moodBtn.sel{border-color:#00d4ff;background:rgba(0,180,255,0.12);transform:scale(1.1)}
+
+/* TOAST */
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(0,10,24,0.95);border:1px solid #00d4ff;color:#00d4ff;padding:6px 16px;font-size:8px;letter-spacing:2px;z-index:9999;animation:fadeIn 0.3s ease;white-space:nowrap;pointer-events:none}
+
+/* CALC */
+.cBtn{background:rgba(0,10,24,0.9);border:1px solid rgba(0,180,255,0.12);color:#8ecae6;padding:12px;font-family:'Share Tech Mono',monospace;font-size:13px;cursor:pointer;transition:all .15s}
+.cBtn:active{background:rgba(0,180,255,0.15)}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="bgGlow"></div>
+<div class="scanline"></div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="reactor"><div class="rCore"></div></div>
+  <div class="hTitle" style="flex:1">
+    <h1>J.A.R.V.I.S</h1>
+    <p>KİŞİSEL YAPAY ZEKA v6.0</p>
+  </div>
+  <div style="text-align:right">
+    <div style="font-family:Orbitron;font-size:13px;color:#00d4ff;letter-spacing:2px" id="clock"></div>
+    <div style="font-size:6px;color:#2a4060" id="dateEl"></div>
+    <div style="display:flex;align-items:center;gap:3px;justify-content:flex-end;margin-top:1px">
+      <div class="dot" id="stDot" style="background:#00d4ff;box-shadow:0 0 5px #00d4ff"></div>
+      <span style="font-size:6px;color:#3a6080" id="stTxt">AKTİF</span>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="sw('dashboard',this)"><span class="tIco">🎯</span>JARVIS</div>
+  <div class="tab" onclick="sw('tasks',this)"><span class="tIco">✅</span>GÖREV</div>
+  <div class="tab" onclick="sw('notes',this)"><span class="tIco">📋</span>NOTLAR</div>
+  <div class="tab" onclick="sw('calendar',this)"><span class="tIco">📅</span>TAKVİM</div>
+  <div class="tab" onclick="sw('alarm',this)"><span class="tIco">⏰</span>ALARM</div>
+  <div class="tab" onclick="sw('weather',this)"><span class="tIco">🌤</span>HAVA</div>
+  <div class="tab" onclick="sw('finance',this)"><span class="tIco">💰</span>DÖVİZ</div>
+  <div class="tab" onclick="sw('camera',this)"><span class="tIco">📷</span>KAMERA</div>
+  <div class="tab" onclick="sw('mood',this)"><span class="tIco">😊</span>RUH HALİ</div>
+  <div class="tab" onclick="sw('vault',this)"><span class="tIco">🔐</span>KASA</div>
+  <div class="tab" onclick="sw('calc',this)"><span class="tIco">🧮</span>HESAP</div>
+  <div class="tab" onclick="sw('sys',this)"><span class="tIco">⚙️</span>SİSTEM</div>
+  <div class="tab" onclick="sw('mem',this)"><span class="tIco">🧠</span>HAFIZA</div>
+  <div class="tab" onclick="sw('briefing',this)"><span class="tIco">📰</span>BRİFİNG</div>
+</div>
+
+<div style="flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative;z-index:1">
+
+<!-- ═══ DASHBOARD ═══ -->
+<div id="tab-dashboard" style="flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column">
+  
+  <!-- Animated Canvas Background -->
+  <canvas id="dashCanvas" style="position:absolute;inset:0;z-index:0;width:100%;height:100%"></canvas>
+
+  <!-- Top info panels -->
+  <div style="position:absolute;top:6px;left:6px;z-index:5;width:calc(50% - 10px)">
+    <!-- Time & Weather mini -->
+    <div style="background:rgba(1,8,22,0.88);border:1px solid rgba(0,180,255,0.2);padding:8px;margin-bottom:6px;backdrop-filter:blur(4px)">
+      <div style="font-family:Orbitron;font-size:20px;color:#00d4ff;letter-spacing:2px" id="bigClock">--:--</div>
+      <div style="font-size:7px;color:#3a6080;margin-top:2px" id="bigDate"></div>
+      <div style="font-size:9px;color:#8ecae6;margin-top:4px" id="wxMini">— Hava yükleniyor...</div>
+    </div>
+    <!-- System stats -->
+    <div style="background:rgba(1,8,22,0.88);border:1px solid rgba(0,180,255,0.2);padding:8px;backdrop-filter:blur(4px)">
+      <div style="font-size:7px;letter-spacing:2px;color:#d4a843;margin-bottom:6px">SİSTEM</div>
+      <div class="sBar"><div class="sBarH"><span style="color:#3a6080;font-size:7px">CPU</span><span style="color:#00d4ff;font-size:7px" id="cpuV">--</span></div><div class="sBarBg"><div class="statFill sBarFill" id="cpuB" style="background:#00d4ff"></div></div></div>
+      <div class="sBar"><div class="sBarH"><span style="color:#3a6080;font-size:7px">BELLEK</span><span style="color:#00ff88;font-size:7px" id="memV">--</span></div><div class="sBarBg"><div class="sBarFill" id="memB" style="background:#00ff88"></div></div></div>
+      <div class="sBar"><div class="sBarH"><span style="color:#3a6080;font-size:7px">AĞ</span><span style="color:#ffaa00;font-size:7px" id="netV">--</span></div><div class="sBarBg"><div class="sBarFill" id="netB" style="background:#ffaa00"></div></div></div>
+    </div>
+  </div>
+
+  <!-- Right info panels -->
+  <div style="position:absolute;top:6px;right:6px;z-index:5;width:calc(50% - 10px)">
+    <div style="background:rgba(1,8,22,0.88);border:1px solid rgba(0,180,255,0.2);padding:8px;margin-bottom:6px;backdrop-filter:blur(4px)">
+      <div style="font-size:7px;letter-spacing:2px;color:#d4a843;margin-bottom:6px">AKTIF GÖREVLER</div>
+      <div id="dashTasks" style="font-size:10px;color:#8ecae6;font-family:system-ui;line-height:1.8">—</div>
+    </div>
+    <div style="background:rgba(1,8,22,0.88);border:1px solid rgba(0,180,255,0.2);padding:8px;backdrop-filter:blur(4px)">
+      <div style="font-size:7px;letter-spacing:2px;color:#d4a843;margin-bottom:4px">SON NOT</div>
+      <div id="dashNote" style="font-size:10px;color:#8ecae6;font-family:system-ui;line-height:1.6">—</div>
+    </div>
+  </div>
+
+  <!-- CENTER VOICE RING -->
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);z-index:6;display:flex;flex-direction:column;align-items:center;gap:10px">
+    <!-- Outer rings -->
+    <div style="position:relative;width:180px;height:180px;display:flex;align-items:center;justify-content:center">
+      <div style="position:absolute;width:180px;height:180px;border-radius:50%;border:1px solid rgba(0,212,255,0.12);animation:ringPulse 4s ease-in-out infinite"></div>
+      <div style="position:absolute;width:150px;height:150px;border-radius:50%;border:1px solid rgba(0,212,255,0.18);animation:ringPulse 3s ease-in-out infinite 0.5s"></div>
+      <div style="position:absolute;width:120px;height:120px;border-radius:50%;border:1px solid rgba(0,212,255,0.25);animation:ringPulse 2.5s ease-in-out infinite 1s"></div>
+      <!-- Main mic button -->
+      <div id="micMain" onclick="toggleMic()" style="width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,0.18) 0%,rgba(0,100,180,0.1) 60%,transparent 100%);border:2px solid rgba(0,212,255,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;position:relative;z-index:2;box-shadow:0 0 20px rgba(0,212,255,0.2)">
+        <span id="micIcon" style="font-size:28px">🎤</span>
+        <span id="micLabel" style="font-size:6px;letter-spacing:1px;color:rgba(0,212,255,0.7);margin-top:2px">KONUŞ</span>
+      </div>
+    </div>
+    <!-- Wave bars (shown when listening/speaking) -->
+    <div id="dashWave" style="display:none;gap:3px;align-items:center;height:28px;justify-content:center">
+      <div style="width:3px;border-radius:2px;background:#00d4ff;height:6px;animation:wave 0.4s 0s ease-in-out infinite"></div>
+      <div style="width:3px;border-radius:2px;background:#00d4ff;height:12px;animation:wave 0.4s 0.07s ease-in-out infinite"></div>
+      <div style="width:3px;border-radius:2px;background:#00d4ff;height:20px;animation:wave 0.4s 0.14s ease-in-out infinite"></div>
+      <div style="width:3px;border-radius:2px;background:#00d4ff;height:26px;animation:wave 0.4s 0.21s ease-in-out infinite"></div>
+      <div style="width:3px;border-radius:2px;background:#00d4ff;height:20px;animation:wave 0.4s 0.28s ease-in-out infinite"></div>
+      <div style="width:3px;border-radius:2px;background:#00d4ff;height:12px;animation:wave 0.4s 0.35s ease-in-out infinite"></div>
+      <div style="width:3px;border-radius:2px;background:#00d4ff;height:6px;animation:wave 0.4s 0.42s ease-in-out infinite"></div>
+    </div>
+    <div id="micStatus" style="font-size:8px;letter-spacing:2px;color:#3a6080">DOKUNUN VEYA KONUŞUN</div>
+  </div>
+
+  <!-- Bottom status bar -->
+  <div style="position:absolute;bottom:46px;left:0;right:0;z-index:5;padding:0 8px">
+    <div style="background:rgba(1,8,22,0.88);border:1px solid rgba(0,180,255,0.15);padding:6px 10px;backdrop-filter:blur(4px)">
+      <div id="lastJarvisDash" style="font-size:11px;color:#a0d8ef;font-family:system-ui;line-height:1.5;max-height:40px;overflow:hidden">Sistemler aktif efendim. Komutunuzu bekliyorum.</div>
+    </div>
+  </div>
+
+  <!-- Chat slide-up -->
+  <div id="chatPanel" style="position:absolute;bottom:0;left:0;right:0;z-index:7;background:rgba(1,6,20,0.97);border-top:1px solid rgba(0,180,255,0.2);height:40px;transition:height 0.3s;overflow:hidden">
+    <div onclick="toggleChat()" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer">
+      <span style="font-size:8px;letter-spacing:2px;color:#00d4ff">💬 SOHBET</span>
+      <span id="chatArrow" style="color:#00d4ff;font-size:10px">▲</span>
+    </div>
+    <div id="chatMsgs" style="height:200px;overflow-y:auto;padding:6px 10px;display:flex;flex-direction:column;gap:6px"></div>
+    <div style="padding:6px 8px;display:flex;gap:6px;border-top:1px solid rgba(0,180,255,0.1)">
+      <textarea id="msgInp" placeholder="Yazın..." rows="1" onkeydown="hKey(event)" oninput="grow(this)" style="flex:1;background:rgba(0,180,255,0.04);border:1px solid rgba(0,180,255,0.15);border-bottom:1px solid #00d4ff;color:#a0d8ef;font-family:'Share Tech Mono',monospace;font-size:12px;padding:7px 9px;outline:none;resize:none;min-height:36px"></textarea>
+      <button onclick="sendMsg()" style="width:36px;height:36px;background:rgba(0,180,255,0.1);border:1px solid #00d4ff;color:#00d4ff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>
+      <button id="spkBtn" onclick="toggleSpeak()" style="width:36px;height:36px;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.4);color:#00ff88;font-size:14px;cursor:pointer;flex-shrink:0">🔊</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TASKS ═══ -->
+<div id="tab-tasks" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ GÖREV YÖNETİCİSİ</div>
+  <div class="panel" style="padding:10px;margin-bottom:8px">
+    <label class="lbl">GÖREV</label><input id="taskInp" placeholder="Yeni görev..." onkeydown="if(event.key==='Enter')addTask()">
+    <label class="lbl">ÖNCELİK</label>
+    <select id="taskPri"><option value="high">🔴 Yüksek</option><option value="mid" selected>🟡 Orta</option><option value="low">🟢 Düşük</option></select>
+    <button class="btn" onclick="addTask()">+ GÖREV EKLE</button>
+  </div>
+  <div style="display:flex;gap:5px;margin-bottom:8px">
+    <button class="btn" style="padding:5px;font-size:7px" onclick="filterTasks('all')">TÜMÜ</button>
+    <button class="btn" style="padding:5px;font-size:7px" onclick="filterTasks('active')">AKTİF</button>
+    <button class="btn" style="padding:5px;font-size:7px" onclick="filterTasks('done')">TAMAMLANDI</button>
+  </div>
+  <div id="taskList"></div>
+</div>
+
+<!-- ═══ NOTES ═══ -->
+<div id="tab-notes" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ NOT SİSTEMİ</div>
+  <div class="panel" style="padding:10px;margin-bottom:8px">
+    <label class="lbl">BAŞLIK</label><input id="noteTitle" placeholder="Not başlığı...">
+    <label class="lbl">İÇERİK</label>
+    <textarea id="noteText" placeholder="Not içeriği..." style="height:65px;resize:none;margin-bottom:7px"></textarea>
+    <label class="lbl">KATEGORİ</label>
+    <select id="noteCat"><option value="genel">📌 Genel</option><option value="iş">💼 İş</option><option value="kişisel">👤 Kişisel</option><option value="fikir">💡 Fikir</option></select>
+    <button class="btn" onclick="addNote()">+ NOT EKLE</button>
+  </div>
+  <div id="noteList"></div>
+</div>
+
+<!-- ═══ CALENDAR ═══ -->
+<div id="tab-calendar" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ TAKVİM VE RANDEVU</div>
+  <div class="panel" style="padding:10px;margin-bottom:8px">
+    <label class="lbl">ETKİNLİK</label><input id="evTitle" placeholder="Etkinlik adı...">
+    <label class="lbl">TARİH</label><input type="date" id="evDate">
+    <label class="lbl">SAAT</label><input type="time" id="evTime">
+    <label class="lbl">AÇIKLAMA</label><input id="evDesc" placeholder="Açıklama...">
+    <button class="btn" onclick="addEvent()">+ ETKİNLİK EKLE</button>
+  </div>
+  <div id="calList"></div>
+</div>
+
+<!-- ═══ ALARM ═══ -->
+<div id="tab-alarm" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ ALARM SİSTEMİ</div>
+  <div class="panel" style="padding:10px;margin-bottom:8px">
+    <label class="lbl">SAAT</label><input type="time" id="alTime">
+    <label class="lbl">ETİKET</label><input id="alLabel" placeholder="Alarm açıklaması...">
+    <label class="lbl">TEKRAR</label>
+    <select id="alRepeat"><option value="once">Bir kez</option><option value="daily">Her gün</option><option value="weekday">Hafta içi</option></select>
+    <button class="btn btnGold" onclick="addAlarm()">+ ALARM EKLE</button>
+  </div>
+  <div id="alarmList"></div>
+</div>
+
+<!-- ═══ WEATHER ═══ -->
+<div id="tab-weather" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ HAVA DURUMU</div>
+  <div id="wxContent">
+    <div style="text-align:center;padding:14px">
+      <button class="btn" onclick="getWx()" style="max-width:200px;margin:0 auto 8px">📍 KONUMUMU KULLAN</button>
+      <div style="font-size:7px;color:#3a6080;margin:6px 0;letter-spacing:1px">veya şehir girin:</div>
+      <div style="display:flex;gap:5px"><input id="cityInp" placeholder="Şehir..." style="margin-bottom:0;flex:1"><button class="btn" onclick="getWxCity()" style="width:auto;padding:7px 10px;margin:0;white-space:nowrap">ARA</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FINANCE ═══ -->
+<div id="tab-finance" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ DÖVİZ VE KRİPTO</div>
+  <button class="btn" onclick="getRates()" style="margin-bottom:8px">🔄 GÜNCELLE</button>
+  <div id="ratesContent"><div style="text-align:center;color:#3a6080;padding:16px;font-size:10px">Güncelle butonuna basın...</div></div>
+</div>
+
+<!-- ═══ CAMERA ═══ -->
+<div id="tab-camera" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ GÖRÜNTÜ ANALİZİ</div>
+  <div class="panel" style="padding:10px;text-align:center">
+    <div style="border:2px dashed rgba(0,180,255,0.2);padding:16px;cursor:pointer;margin-bottom:8px" onclick="document.getElementById('imgInp').click()">
+      <div style="font-size:28px;margin-bottom:6px">📷</div>
+      <div style="font-size:8px;color:#3a6080;letter-spacing:1px">FOTOĞRAF SEÇ VEYA ÇEK</div>
+    </div>
+    <input type="file" id="imgInp" accept="image/*" capture="environment" style="display:none" onchange="loadImg(this)">
+    <div id="imgPreview" style="display:none;margin-bottom:8px">
+      <img id="imgEl" style="width:100%;border:1px solid rgba(0,180,255,0.2);margin-bottom:6px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        <button class="btn" onclick="analyzeImg('genel')">GENEL ANALİZ</button>
+        <button class="btn" onclick="analyzeImg('nesne')">NESNE TAN.</button>
+        <button class="btn" onclick="analyzeImg('metin')">METİN OKU</button>
+        <button class="btn" onclick="analyzeImg('duygu')">DUYGU ANALİZ</button>
+      </div>
+    </div>
+    <div id="imgResult" style="display:none;text-align:left;border:1px solid rgba(0,255,136,0.2);border-left:2px solid #00ff88;padding:9px;font-size:11px;font-family:system-ui;line-height:1.7;color:#a0d8ef"></div>
+  </div>
+</div>
+
+<!-- ═══ MOOD ═══ -->
+<div id="tab-mood" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ RUH HALİ TAKİBİ</div>
+  <div class="panel" style="padding:10px;margin-bottom:8px">
+    <div style="font-size:8px;color:#3a6080;letter-spacing:1px;margin-bottom:8px">BUGÜN NASIL HİSSEDİYORSUNUZ?</div>
+    <div style="display:flex;gap:5px;margin-bottom:8px">
+      <button class="moodBtn" onclick="selMoodFn('😊','Mutlu',this)">😊</button>
+      <button class="moodBtn" onclick="selMoodFn('😐','Nötr',this)">😐</button>
+      <button class="moodBtn" onclick="selMoodFn('😔','Üzgün',this)">😔</button>
+      <button class="moodBtn" onclick="selMoodFn('😤','Sinirli',this)">😤</button>
+      <button class="moodBtn" onclick="selMoodFn('😴','Yorgun',this)">😴</button>
+      <button class="moodBtn" onclick="selMoodFn('🔥','Enerjik',this)">🔥</button>
+    </div>
+    <input id="moodNote" placeholder="Not ekleyin (opsiyonel)...">
+    <button class="btn btnGreen" onclick="saveMood()">KAYDET</button>
+  </div>
+  <div id="moodList"></div>
+</div>
+
+<!-- ═══ VAULT ═══ -->
+<div id="tab-vault" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ ŞİFRE KASASI</div>
+  <div class="panel" style="padding:10px;margin-bottom:8px">
+    <label class="lbl">SERVİS</label><input id="vSvc" placeholder="Örn: Gmail...">
+    <label class="lbl">KULLANICI ADI</label><input id="vUsr" placeholder="kullanici@email.com">
+    <label class="lbl">ŞİFRE</label>
+    <div style="display:flex;gap:5px;margin-bottom:7px"><input type="password" id="vPass" placeholder="Şifre..." style="margin-bottom:0;flex:1"><button class="btn" onclick="genPass()" style="width:auto;padding:7px;margin:0;white-space:nowrap;font-size:7px">ÜRET</button></div>
+    <label class="lbl">NOT</label><input id="vNote" placeholder="Not...">
+    <button class="btn btnGold" onclick="addVault()">+ KASAYA EKLE</button>
+  </div>
+  <div style="font-size:7px;color:#ff4444;margin-bottom:6px">⚠ Şifreler yalnızca bu cihazda saklanır.</div>
+  <div id="vaultList"></div>
+</div>
+
+<!-- ═══ CALC ═══ -->
+<div id="tab-calc" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ HESAP MAKİNESİ</div>
+  <div class="panel" style="padding:10px;margin-bottom:8px">
+    <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(0,180,255,0.12);padding:9px;margin-bottom:7px;text-align:right">
+      <div style="font-size:8px;color:#3a6080;min-height:13px" id="cExpr"></div>
+      <div style="font-family:Orbitron;font-size:24px;color:#00d4ff;letter-spacing:2px;min-height:32px" id="cDisp">0</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">
+      <button class="cBtn" onclick="calc('C')" style="color:#ff4444">C</button>
+      <button class="cBtn" onclick="calc('±')">±</button>
+      <button class="cBtn" onclick="calc('%')">%</button>
+      <button class="cBtn" onclick="calc('/')" style="color:#d4a843">÷</button>
+      <button class="cBtn" onclick="calc('7')">7</button><button class="cBtn" onclick="calc('8')">8</button><button class="cBtn" onclick="calc('9')">9</button>
+      <button class="cBtn" onclick="calc('*')" style="color:#d4a843">×</button>
+      <button class="cBtn" onclick="calc('4')">4</button><button class="cBtn" onclick="calc('5')">5</button><button class="cBtn" onclick="calc('6')">6</button>
+      <button class="cBtn" onclick="calc('-')" style="color:#d4a843">−</button>
+      <button class="cBtn" onclick="calc('1')">1</button><button class="cBtn" onclick="calc('2')">2</button><button class="cBtn" onclick="calc('3')">3</button>
+      <button class="cBtn" onclick="calc('+')" style="color:#d4a843">+</button>
+      <button class="cBtn" onclick="calc('0')" style="grid-column:span 2">0</button>
+      <button class="cBtn" onclick="calc('.')">.</button>
+      <button class="cBtn" onclick="calc('=')" style="background:rgba(0,180,255,0.12);border-color:#00d4ff;color:#00d4ff">=</button>
+    </div>
+  </div>
+  <div class="panel" style="padding:10px">
+    <div style="font-size:8px;color:#d4a843;margin-bottom:7px">AI HESAPLAMA</div>
+    <input id="aiCalcInp" placeholder="Örn: 850 TL ürünün KDV dahil fiyatı?">
+    <button class="btn" onclick="aiCalc()">JARVIS HESAPLA</button>
+    <div id="aiCalcRes" style="display:none;margin-top:7px;font-size:11px;color:#a0d8ef;font-family:system-ui;line-height:1.6"></div>
+  </div>
+</div>
+
+<!-- ═══ SYSTEM ═══ -->
+<div id="tab-sys" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ SİSTEM PANELİ</div>
+  <div class="panel" style="padding:10px;margin-bottom:8px">
+    <div style="font-size:8px;color:#d4a843;margin-bottom:8px">PERFORMANS</div>
+    <div class="sBar"><div class="sBarH"><span style="color:#3a6080;font-size:7px">CPU</span><span style="color:#00d4ff;font-size:7px" id="cpuVS">--</span></div><div class="sBarBg"><div class="sBarFill" id="cpuBS" style="background:#00d4ff"></div></div></div>
+    <div class="sBar"><div class="sBarH"><span style="color:#3a6080;font-size:7px">BELLEK</span><span style="color:#00ff88;font-size:7px" id="memVS">--</span></div><div class="sBarBg"><div class="sBarFill" id="memBS" style="background:#00ff88"></div></div></div>
+    <div class="sBar"><div class="sBarH"><span style="color:#3a6080;font-size:7px">AĞ</span><span style="color:#ffaa00;font-size:7px" id="netVS">--</span></div><div class="sBarBg"><div class="sBarFill" id="netBS" style="background:#ffaa00"></div></div></div>
+    <div class="sBar"><div class="sBarH"><span style="color:#3a6080;font-size:7px">GÜVENLİK</span><span style="color:#00ff88;font-size:7px">99%</span></div><div class="sBarBg"><div class="sBarFill" style="width:99%;background:#00ff88"></div></div></div>
+  </div>
+  <div class="panel" style="padding:10px"><div id="sysInfo"></div></div>
+</div>
+
+<!-- ═══ BRIEFING ═══ -->
+<div id="tab-briefing" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ GÜNLÜK BRİFİNG</div>
+  <button class="btn" onclick="doBriefing()" style="margin-bottom:8px">🔄 BRİFİNG OLUŞTUR</button>
+  <button class="btn btnGold" onclick="addMsg('jarvis','Günlük brifing için hazırlanıyorum efendim.');doBriefing()" style="margin-bottom:8px">💬 SOHBETE EKLE</button>
+  <div id="briefingContent"><div style="text-align:center;color:#3a6080;padding:24px;font-size:10px;line-height:2">Briefing butonuna basın.<br>JARVIS günlük özet hazırlayacak.</div></div>
+</div>
+
+<!-- ═══ MEMORY ═══ -->
+<div id="tab-mem" style="display:none;flex:1;overflow-y:auto;padding:10px">
+  <div class="sHead">▸ ÖĞRENME VE HAFIZA</div>
+  <div id="memList"></div>
+  <button onclick="clearMem()" class="btn btnRed" id="clrMemBtn" style="display:none">⚠ HAFIZAYI SIFIRLA</button>
+</div>
+
+</div>
+
+<script>
+const GROQ='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';
+let mem=JSON.parse(localStorage.getItem('jv6_mem')||'{}');
+let notes=JSON.parse(localStorage.getItem('jv6_notes')||'[]');
+let tasks=JSON.parse(localStorage.getItem('jv6_tasks')||'[]');
+let alarms=JSON.parse(localStorage.getItem('jv6_alarms')||'[]');
+let events=JSON.parse(localStorage.getItem('jv6_events')||'[]');
+let moods=JSON.parse(localStorage.getItem('jv6_moods')||'[]');
+let vault=JSON.parse(localStorage.getItem('jv6_vault')||'[]');
+let hist=[],thinking=false,voiceOn=true,listening=false,speaking=false;
+let synth=window.speechSynthesis,voices=[],rec=null,lastJ='';
+let calcVal='0',calcPrev='',calcOp='',calcNew=true;
+let selMoodV='',selMoodL='',imgB64=null;
+let chatOpen=false,radarAnim=null;
+
+// ── VOICES ──
+if(synth){synth.getVoices();synth.onvoiceschanged=()=>voices=synth.getVoices();}
+setTimeout(()=>voices=synth?synth.getVoices():[],500);
+function bestV(){
+  // Priority: deep male voices for JARVIS effect
+  const pr=[
+    'Google UK English Male',
+    'Microsoft David - English (United States)',
+    'Microsoft David',
+    'Microsoft Mark',
+    'Alex',
+    'Daniel',
+    'Fred',
+    'Google US English',
+    'en-GB',
+  ];
+  for(const n of pr){const v=voices.find(x=>x.name.includes(n)||x.lang===n);if(v)return v;}
+  // Prefer any male english voice
+  const enMale=voices.find(v=>v.lang.startsWith('en')&&(v.name.toLowerCase().includes('male')||v.name.toLowerCase().includes('david')||v.name.toLowerCase().includes('mark')||v.name.toLowerCase().includes('james')||v.name.toLowerCase().includes('paul')));
+  if(enMale)return enMale;
+  return voices.find(v=>v.lang.startsWith('tr'))||voices.find(v=>v.lang.startsWith('en'))||voices[0];
+}
+function speak(text){
+  if(!voiceOn||!synth)return;
+  synth.cancel();
+  const clean=text.replace(/[*_#►▸●○◆\[\]]/g,'').trim();if(!clean)return;
+  const u=new SpeechSynthesisUtterance(clean);
+  // Maximum JARVIS effect: slowest, deepest possible
+  u.rate=0.78;   // Very deliberate, authoritative pace
+  u.pitch=0.55;  // As deep as possible
+  u.volume=1;
+  const v=bestV();
+  if(v){u.voice=v;u.lang=v.lang;}
+  else{u.lang='en-US';} // Default to English for deeper voice
+  u.onstart=()=>{speaking=true;setSt('KONUŞUYOR','#00ff88');updMic();showDashWave(true);};
+  u.onend=u.onerror=()=>{speaking=false;setSt('AKTİF','#00d4ff');updMic();showDashWave(false);};
+  synth.speak(u);
+}
+function toggleSpeak(){voiceOn=!voiceOn;if(!voiceOn&&synth)synth.cancel();const b=document.getElementById('spkBtn');b.textContent=voiceOn?'🔊':'🔇';b.style.borderColor=voiceOn?'rgba(0,255,136,0.4)':'rgba(80,80,100,0.3)';b.style.color=voiceOn?'#00ff88':'#3a6080';}
+
+// ── MIC ──
+function toggleMic(){
+  if(listening){rec&&rec.stop();return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){addMsg('jarvis','Ses tanıma desteklenmiyor efendim.');return;}
+  if(speaking)synth.cancel();
+  rec=new SR();rec.lang='tr-TR';rec.continuous=false;rec.interimResults=false;
+  rec.onstart=()=>{listening=true;setSt('DİNLİYOR','#ff4444');updMic();showDashWave(true);};
+  rec.onresult=e=>{const t=e.results[0][0].transcript;stopLis();sendMsg(t);};
+  rec.onend=rec.onerror=stopLis;
+  rec.start();
+}
+function stopLis(){listening=false;setSt('AKTİF','#00d4ff');updMic();showDashWave(false);}
+function updMic(){
+  const m=document.getElementById('micMain'),ico=document.getElementById('micIcon'),lbl=document.getElementById('micLabel'),st=document.getElementById('micStatus');
+  if(!m)return;
+  if(listening){m.style.borderColor='#ff4444';m.style.boxShadow='0 0 30px rgba(255,60,60,0.4)';m.style.background='radial-gradient(circle,rgba(255,60,60,0.2) 0%,transparent 70%)';ico.textContent='🔴';lbl.textContent='DİNLİYOR';if(st)st.textContent='DİNLİYOR...';}
+  else if(speaking){m.style.borderColor='#00ff88';m.style.boxShadow='0 0 30px rgba(0,255,136,0.4)';m.style.background='radial-gradient(circle,rgba(0,255,136,0.15) 0%,transparent 70%)';ico.textContent='🔊';lbl.textContent='KONUŞUYOR';if(st)st.textContent='JARVIS KONUŞUYOR...';}
+  else{m.style.borderColor='rgba(0,212,255,0.6)';m.style.boxShadow='0 0 20px rgba(0,212,255,0.2)';m.style.background='radial-gradient(circle,rgba(0,212,255,0.18) 0%,rgba(0,100,180,0.1) 60%,transparent 100%)';ico.textContent='🎤';lbl.textContent='KONUŞ';if(st)st.textContent='DOKUNUN VEYA KONUŞUN';}
+}
+function showDashWave(show){const w=document.getElementById('dashWave');if(w)w.style.display=show?'flex':'none';}
+
+// ── STATUS ──
+function setSt(t,c){const d=document.getElementById('stDot'),tx=document.getElementById('stTxt');if(d){d.style.background=c;d.style.boxShadow=`0 0 5px ${c}`;}if(tx)tx.textContent=t;}
+
+// ── GROQ API ──
+async function groqCall(sys,msgs,maxT=800){
+  const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:maxT,messages:[{role:'system',content:sys},...msgs]})});
+  if(!r.ok)throw new Error('API '+r.status);
+  const d=await r.json();return d?.choices?.[0]?.message?.content||'';
+}
+
+// ── SYS PROMPT ──
+function buildSys(){
+  const ms=Object.keys(mem).length?'\n\nHafızam:\n'+Object.entries(mem).map(([k,v])=>`• ${k}: ${v}`).join('\n'):'';
+  const taskSum=tasks.filter(t=>!t.done).length;
+  const doneSum=tasks.filter(t=>t.done).length;
+  const alSum=alarms.filter(a=>a.on).length;
+  const todayEvs=events.filter(e=>e.date===new Date().toISOString().split('T')[0]).map(e=>e.title).join(', ');
+  const recentMood=moods[0]?moods[0].mood+' '+moods[0].label:'bilinmiyor';
+  
+  return `Sen J.A.R.V.I.S'sin — Just A Rather Very Intelligent System.
+
+KİŞİLİK: Iron Man'deki JARVIS gibi son derece zeki, analitik, kibar ama özgüvenli bir yapay zeka asistanısın. Derin ve otoriter bir üslupla konuşursun. "Efendim" diye hitap edersin. Bazen ince bir espri yaparsın ama daima profesyonelsin.
+
+ZEKA SEVİYESİ: Dünya genelinde lider bir yapay zeka olarak; bilim, teknoloji, strateji, psikoloji, tıp, hukuk, finans, sanat, tarih ve daha fazlasında uzman düzeyinde bilgiye sahipsin. Karmaşık soruları bile derinlemesine analiz edip çözersin. Kullanıcının aklına gelmeyecek alternatifleri ve açıları da düşünürsün.
+
+GÖREV DURUMU:
+- Aktif görev: ${taskSum} (${doneSum} tamamlandı)
+- Aktif alarm: ${alSum}
+- Bugünkü etkinlikler: ${todayEvs||'Yok'}
+- Son ruh hali: ${recentMood}
+- Notlar: ${notes.length} kayıt
+
+KURALLAR:
+1. Türkçe konuş, sade düz metin kullan (sesli okunacak)
+2. Emoji veya sembol kullanma
+3. Yanıtlar kısa ama bilgi yoğun olsun
+4. Kullanıcıyı her zaman "efendim" diye hitap et
+5. Karmaşık konularda adım adım açıkla
+6. Proaktif ol — kullanıcının sorusunun ötesinde faydalı bilgi sun
+
+Yanıt formatı:
+YANIT: [yanıtın buraya]
+ÖĞREN: {"anahtar":"değer"} veya {}${ms}`;
+}
+
+// ── SEND ──
+async function sendMsg(override){
+  if(thinking)return;
+  const inp=document.getElementById('msgInp');
+  const text=(override||inp.value).trim();if(!text)return;
+  inp.value='';grow(inp);
+  addMsg('user',text);hist.push({role:'user',content:text});
+  thinking=true;setSt('İŞLİYOR','#ffaa00');showTyping();
+  const lo=text.toLowerCase();
+  // Smart routing
+  const routes=[['not','ekle','notes'],['görev','yapılacak','tasks'],['alarm','alarm'],['hava','weather'],['döviz','kur','finance'],['takvim','randevu','calendar']];
+  for(const [kw1,kw2,tab] of routes){if(lo.includes(kw1)||(kw2&&lo.includes(kw2))){removeTyping();const r=`${tab} sekmesine yönlendiriyorum efendim.`;addMsg('jarvis',r);speak(r);thinking=false;setSt('AKTİF','#00d4ff');sw(tab,null);return;}}
+  try{
+    const full=await groqCall(buildSys(),hist.slice(-12));
+    hist.push({role:'assistant',content:full});
+    const ym=full.match(/YANIT:\s*([\s\S]*?)(?=ÖĞREN:|$)/);
+    const om=full.match(/ÖĞREN:\s*(\{[\s\S]*?\})/);
+    const yanit=ym?ym[1].trim():full.replace(/ÖĞREN:[\s\S]*$/,'').trim();
+    if(om){try{const l=JSON.parse(om[1]);if(Object.keys(l).length){Object.assign(mem,l);saveMem();renderMem();}}catch(e){}}
+    removeTyping();addMsg('jarvis',yanit);lastJ=yanit;
+    const dashLast=document.getElementById('lastJarvisDash');if(dashLast)dashLast.textContent=yanit;
+    speak(yanit);
+  }catch(e){removeTyping();const err='Bağlantı hatası efendim.';addMsg('jarvis',err);speak(err);}
+  thinking=false;setSt(speaking?'KONUŞUYOR':'AKTİF',speaking?'#00ff88':'#00d4ff');
+}
+
+// ── CHAT UI ──
+function addMsg(role,text){
+  const wrap=document.getElementById('chatMsgs');
+  const div=document.createElement('div');div.className=`msg ${role}`;
+  const now=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  div.innerHTML=`<div class="mIco">${role==='jarvis'?'JAR':'SİZ'}</div><div class="mBody"><div class="mName">${role==='jarvis'?'JARVIS':'SİZ'} · ${now}</div><div class="mTxt">${text}</div></div>`;
+  wrap.appendChild(div);wrap.scrollTop=wrap.scrollHeight;
+  if(!chatOpen)openChat();
+}
+function showTyping(){const w=document.getElementById('chatMsgs');const d=document.createElement('div');d.className='msg jarvis';d.id='typing';d.innerHTML=`<div class="mIco">JAR</div><div class="mBody"><div class="typing"><span></span><span></span><span></span></div></div>`;w.appendChild(d);w.scrollTop=w.scrollHeight;}
+function removeTyping(){const t=document.getElementById('typing');if(t)t.remove();}
+function toggleChat(){chatOpen?closeChat():openChat();}
+function openChat(){chatOpen=true;document.getElementById('chatPanel').style.height='55%';document.getElementById('chatArrow').textContent='▼';}
+function closeChat(){chatOpen=false;document.getElementById('chatPanel').style.height='40px';document.getElementById('chatArrow').textContent='▲';}
+
+// ── CANVAS DASHBOARD ──
+function initDashCanvas(){
+  const canvas=document.getElementById('dashCanvas');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  let sw=0;
+  const dots=Array.from({length:25},()=>({a:Math.random()*360,r:15+Math.random()*85,s:0.08+Math.random()*0.25,c:Math.random()>0.85?'#ff4444':Math.random()>0.5?'#00d4ff':'#00ff88',sz:1+Math.random()*2.5}));
+  // Orbit particles
+  const particles=Array.from({length:40},()=>({x:Math.random(),y:Math.random(),vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,life:Math.random(),size:Math.random()*1.5+0.5}));
+
+  function draw(){
+    const W=canvas.width=canvas.offsetWidth,H=canvas.height=canvas.offsetHeight;
+    const cx=W/2,cy=H*0.42;
+    ctx.clearRect(0,0,W,H);
+
+    // Dark radial bg
+    const bg=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*0.7);
+    bg.addColorStop(0,'rgba(0,20,50,0.3)');bg.addColorStop(1,'rgba(1,9,18,0)');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+    // Floating particles
+    particles.forEach(p=>{
+      p.x+=p.vx*0.002;p.y+=p.vy*0.002;
+      if(p.x<0)p.x=1;if(p.x>1)p.x=0;if(p.y<0)p.y=1;if(p.y>1)p.y=0;
+      p.life=(p.life+0.005)%1;
+      ctx.fillStyle=`rgba(0,180,255,${0.1+Math.sin(p.life*Math.PI)*0.2})`;
+      ctx.beginPath();ctx.arc(p.x*W,p.y*H,p.size,0,Math.PI*2);ctx.fill();
+    });
+
+    const R=Math.min(W,H)*0.38;
+
+    // Grid rings
+    for(let i=1;i<=5;i++){
+      ctx.beginPath();ctx.arc(cx,cy,(R/5)*i,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(0,180,220,${0.04+i*0.025})`;ctx.lineWidth=0.8;ctx.stroke();
+    }
+    // Cross lines
+    ctx.strokeStyle='rgba(0,180,220,0.07)';ctx.lineWidth=0.6;
+    [[cx-R,cy,cx+R,cy],[cx,cy-R,cx,cy+R],
+     [cx-R*0.7,cy-R*0.7,cx+R*0.7,cy+R*0.7],[cx+R*0.7,cy-R*0.7,cx-R*0.7,cy+R*0.7]
+    ].forEach(([x1,y1,x2,y2])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();});
+
+    // Sweep
+    sw=(sw+1.2)%360;const swR=(sw*Math.PI)/180;
+    for(let i=0;i<55;i++){const a=swR-(i*Math.PI)/180;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,a,a+Math.PI/180);ctx.closePath();ctx.fillStyle=`rgba(0,220,180,${(55-i)/55*0.12})`;ctx.fill();}
+    ctx.shadowColor='#00ffcc';ctx.shadowBlur=6;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(swR)*R,cy+Math.sin(swR)*R);
+    ctx.strokeStyle='rgba(0,255,200,0.9)';ctx.lineWidth=1.5;ctx.stroke();ctx.shadowBlur=0;
+
+    // Dots
+    dots.forEach(d=>{
+      d.a=(d.a+d.s)%360;const rad=(d.a*Math.PI)/180;
+      const x=cx+Math.cos(rad)*d.r*(R/100),y=cy+Math.sin(rad)*d.r*(R/100);
+      const g=ctx.createRadialGradient(x,y,0,x,y,d.sz*3);
+      g.addColorStop(0,d.c);g.addColorStop(1,'transparent');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,d.sz*3,0,Math.PI*2);ctx.fill();
+      ctx.shadowColor=d.c;ctx.shadowBlur=4;
+      ctx.fillStyle=d.c;ctx.beginPath();ctx.arc(x,y,d.sz,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+      // Sweep hit flash
+      const dd=Math.abs(((d.a-sw)+360)%360);
+      if(dd<6){ctx.fillStyle='rgba(255,255,255,0.9)';ctx.beginPath();ctx.arc(x,y,d.sz*1.8,0,Math.PI*2);ctx.fill();}
+    });
+
+    // Tick marks
+    for(let i=0;i<36;i++){const a=(i*10*Math.PI)/180,inner=i%3===0?R-10:R-5;
+      ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*inner,cy+Math.sin(a)*inner);ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);
+      ctx.strokeStyle=i%3===0?'rgba(0,200,255,0.4)':'rgba(0,200,255,0.15)';ctx.lineWidth=i%3===0?1:0.5;ctx.stroke();}
+
+    // Border
+    ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(0,200,255,0.25)';ctx.lineWidth=1.5;ctx.stroke();
+
+    // Data flow lines from center to edges
+    if(Math.random()>0.97){
+      const angle=Math.random()*Math.PI*2;
+      const len=R*0.6;
+      ctx.strokeStyle='rgba(0,212,255,0.3)';ctx.lineWidth=1;
+      ctx.setLineDash([4,8]);
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(angle)*len,cy+Math.sin(angle)*len);ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    radarAnim=requestAnimationFrame(draw);
+  }
+  if(radarAnim)cancelAnimationFrame(radarAnim);
+  draw();
+}
+
+// ── TASKS ──
+function saveTasks(){localStorage.setItem('jv6_tasks',JSON.stringify(tasks));}
+function addTask(){const t=document.getElementById('taskInp').value.trim();if(!t)return;tasks.unshift({id:Date.now(),text:t,priority:document.getElementById('taskPri').value,done:false,time:new Date().toLocaleString('tr-TR')});document.getElementById('taskInp').value='';saveTasks();renderTasks();updateDashTasks();toast('Görev eklendi!');}
+function toggleTask(id){const t=tasks.find(x=>x.id===id);if(t){t.done=!t.done;saveTasks();renderTasks();updateDashTasks();}}
+function delTask(id){tasks=tasks.filter(x=>x.id!==id);saveTasks();renderTasks();updateDashTasks();}
+let taskFilter='all';
+function filterTasks(f){taskFilter=f;renderTasks();}
+function renderTasks(){
+  const list=document.getElementById('taskList');
+  let fl=tasks;if(taskFilter==='active')fl=tasks.filter(t=>!t.done);if(taskFilter==='done')fl=tasks.filter(t=>t.done);
+  if(!fl.length){list.innerHTML='<div style="text-align:center;color:#2a4060;font-size:10px;padding:16px">Görev yok.</div>';return;}
+  const pc={high:'#ff4444',mid:'#ffaa00',low:'#00ff88'};
+  list.innerHTML=fl.map(t=>`<div class="card ${t.done?'':'cardGold'}" style="${t.done?'opacity:0.5':''}"><div style="display:flex;align-items:center;gap:7px"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${t.id})" style="width:15px;height:15px;accent-color:#00d4ff;cursor:pointer"><span style="flex:1;font-size:12px;color:${t.done?'#3a6080':'#a0d8ef'};font-family:system-ui;text-decoration:${t.done?'line-through':'none'}">${t.text}</span><span style="width:7px;height:7px;border-radius:50%;background:${pc[t.priority]};flex-shrink:0"></span><button class="btnSm" style="border-color:#ff4444;color:#ff4444" onclick="delTask(${t.id})">SİL</button></div><div style="font-size:6px;color:#2a4060;margin-top:3px">${t.time}</div></div>`).join('');
+}
+function updateDashTasks(){
+  const el=document.getElementById('dashTasks');if(!el)return;
+  const active=tasks.filter(t=>!t.done);
+  if(!active.length){el.textContent='Tüm görevler tamamlandı ✓';return;}
+  el.innerHTML=active.slice(0,3).map(t=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px"><span style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'#ff4444':t.priority==='mid'?'#ffaa00':'#00ff88'};flex-shrink:0"></span><span style="font-size:10px;color:#8ecae6">${t.text.substring(0,25)}${t.text.length>25?'...':''}</span></div>`).join('')+(active.length>3?`<div style="font-size:7px;color:#3a6080">+${active.length-3} daha...</div>`:'');
+}
+
+// ── NOTES ──
+function saveNotes(){localStorage.setItem('jv6_notes',JSON.stringify(notes));}
+function addNote(){const ti=document.getElementById('noteTitle').value.trim(),tx=document.getElementById('noteText').value.trim();if(!tx)return;notes.unshift({id:Date.now(),title:ti||'Not',text:tx,cat:document.getElementById('noteCat').value,time:new Date().toLocaleString('tr-TR')});document.getElementById('noteTitle').value='';document.getElementById('noteText').value='';saveNotes();renderNotes();updateDashNote();toast('Not eklendi!');}
+function delNote(id){notes=notes.filter(n=>n.id!==id);saveNotes();renderNotes();updateDashNote();}
+function renderNotes(){const list=document.getElementById('noteList');if(!notes.length){list.innerHTML='<div style="text-align:center;color:#2a4060;font-size:10px;padding:16px">Not yok.</div>';return;}list.innerHTML=notes.map(n=>`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px"><span style="font-size:8px;color:#00d4ff;letter-spacing:1px">${n.title}</span><div style="display:flex;gap:4px"><span style="font-size:7px;color:#3a6080">${n.cat}</span><button class="btnSm" style="border-color:#ff4444;color:#ff4444" onclick="delNote(${n.id})">SİL</button></div></div><div style="font-size:11px;color:#8ecae6;font-family:system-ui;line-height:1.6">${n.text}</div><div style="font-size:6px;color:#2a4060;margin-top:3px">${n.time}</div></div>`).join('');}
+function updateDashNote(){const el=document.getElementById('dashNote');if(!el)return;el.textContent=notes[0]?notes[0].text.substring(0,60)+(notes[0].text.length>60?'...':''):'—';}
+
+// ── CALENDAR ──
+function saveEvents(){localStorage.setItem('jv6_events',JSON.stringify(events));}
+function addEvent(){const ti=document.getElementById('evTitle').value.trim(),dt=document.getElementById('evDate').value,tm=document.getElementById('evTime').value;if(!ti||!dt)return;events.push({id:Date.now(),title:ti,date:dt,time:tm,desc:document.getElementById('evDesc').value});events.sort((a,b)=>a.date.localeCompare(b.date));['evTitle','evDate','evTime','evDesc'].forEach(id=>document.getElementById(id).value='');saveEvents();renderCal();toast('Etkinlik eklendi!');}
+function delEvent(id){events=events.filter(e=>e.id!==id);saveEvents();renderCal();}
+function renderCal(){const list=document.getElementById('calList');const today=new Date().toISOString().split('T')[0];if(!events.length){list.innerHTML='<div style="text-align:center;color:#2a4060;font-size:10px;padding:16px">Etkinlik yok.</div>';return;}list.innerHTML=events.map(e=>{const isPast=e.date<today;return`<div class="card ${isPast?'':'cardGold'}" style="${isPast?'opacity:0.5':''}"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:10px;color:${isPast?'#3a6080':'#d4a843'};letter-spacing:1px">${e.title}</div><div style="font-size:8px;color:#8ecae6;margin-top:2px">${e.date}${e.time?' '+e.time:''}</div>${e.desc?`<div style="font-size:10px;color:#5a8090;margin-top:1px">${e.desc}</div>`:''}</div><button class="btnSm" style="border-color:#ff4444;color:#ff4444" onclick="delEvent(${e.id})">SİL</button></div></div>`;}).join('');}
+
+// ── ALARMS ──
+function saveAlarms(){localStorage.setItem('jv6_alarms',JSON.stringify(alarms));}
+function addAlarm(){const t=document.getElementById('alTime').value,l=document.getElementById('alLabel').value||'Alarm';if(!t)return;alarms.push({id:Date.now(),time:t,label:l,repeat:document.getElementById('alRepeat').value,on:true});saveAlarms();renderAlarms();toast('Alarm eklendi: '+t);}
+function delAlarm(id){alarms=alarms.filter(a=>a.id!==id);saveAlarms();renderAlarms();}
+function toggleAlarm(id){const a=alarms.find(x=>x.id===id);if(a){a.on=!a.on;saveAlarms();renderAlarms();}}
+function renderAlarms(){const list=document.getElementById('alarmList');if(!alarms.length){list.innerHTML='<div style="text-align:center;color:#2a4060;font-size:10px;padding:16px">Alarm yok.</div>';return;}list.innerHTML=alarms.map(a=>`<div style="background:rgba(0,10,24,0.9);border:1px solid rgba(${a.on?'212,168,67':'80,80,100'},0.2);border-left:2px solid ${a.on?'#d4a843':'#3a6080'};padding:9px 11px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-family:Orbitron;font-size:17px;color:${a.on?'#d4a843':'#3a6080'};letter-spacing:2px">${a.time}</div><div style="font-size:8px;color:#5a8090;margin-top:1px">${a.label} · ${a.repeat==='once'?'Bir kez':a.repeat==='daily'?'Her gün':'Hafta içi'}</div></div><div style="display:flex;gap:4px"><button class="btnSm" style="border-color:${a.on?'#ff4444':'#00d4ff'};color:${a.on?'#ff4444':'#00d4ff'}" onclick="toggleAlarm(${a.id})">${a.on?'KAPAT':'AÇ'}</button><button class="btnSm" style="border-color:#ff4444;color:#ff4444" onclick="delAlarm(${a.id})">SİL</button></div></div>`).join('');}
+setInterval(()=>{const now=new Date();const cur=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');const day=now.getDay();alarms.filter(a=>a.on&&a.time===cur).forEach(a=>{if(a.repeat==='weekday'&&(day===0||day===6))return;const msg=`Efendim alarm: ${a.label}`;addMsg('jarvis',msg);speak(msg);toast('⏰ '+a.label);if(a.repeat==='once'){a.on=false;saveAlarms();renderAlarms();}});},30000);
+
+// ── WEATHER ──
+async function getWx(){if(!navigator.geolocation){toast('Konum desteklenmiyor.');return;}toast('Konum alınıyor...');navigator.geolocation.getCurrentPosition(async p=>fetchWx(p.coords.latitude,p.coords.longitude),()=>toast('Konum alınamadı.'));}
+async function getWxCity(){const c=document.getElementById('cityInp').value.trim();if(!c)return;await fetchWx(null,null,c);}
+async function fetchWx(lat,lon,city){
+  const el=document.getElementById('wxContent');el.innerHTML='<div style="text-align:center;padding:16px;color:#3a6080;font-size:10px">Yükleniyor...</div>';
+  try{const url=city?`https://wttr.in/${encodeURIComponent(city)}?format=j1`:`https://wttr.in/${lat},${lon}?format=j1`;const r=await fetch(url);const d=await r.json();
+    const cur=d.current_condition[0],area=d.nearest_area[0];
+    const city2=area.areaName[0].value,country=area.country[0].value;
+    const temp=cur.temp_C,feels=cur.FeelsLikeC,desc=cur.lang_tr?.[0]?.value||cur.weatherDesc[0].value;
+    const humid=cur.humidity,wind=cur.windspeedKmph;
+    const icons={'Sunny':'☀️','Clear':'🌙','Partly':'⛅','Cloudy':'☁️','Overcast':'☁️','Rain':'🌧️','Snow':'❄️','Thunder':'⛈️','Fog':'🌫️','Mist':'🌫️'};
+    const icon=Object.entries(icons).find(([k])=>desc.includes(k))?.[1]||'🌤';
+    const wx=document.getElementById('wxMini');if(wx)wx.textContent=`${icon} ${temp}°C ${desc} — ${city2}`;
+    el.innerHTML=`<div style="background:rgba(0,10,24,0.9);border:1px solid rgba(0,180,255,0.15);padding:12px;margin-bottom:7px;text-align:center"><div style="font-size:7px;color:#3a6080;margin-bottom:5px;letter-spacing:2px">${city2}, ${country}</div><div style="font-size:38px;margin-bottom:5px">${icon}</div><div style="font-family:Orbitron;font-size:28px;color:#00d4ff;letter-spacing:2px">${temp}°C</div><div style="font-size:10px;color:#8ecae6;margin-top:3px">${desc}</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:10px"><div style="background:rgba(0,180,255,0.05);border:1px solid rgba(0,180,255,0.1);padding:7px;text-align:center"><div style="font-family:Orbitron;font-size:12px;color:#00d4ff">${feels}°</div><div style="font-size:6px;color:#3a6080;margin-top:1px;letter-spacing:1px">HİSSEDİLEN</div></div><div style="background:rgba(0,180,255,0.05);border:1px solid rgba(0,180,255,0.1);padding:7px;text-align:center"><div style="font-family:Orbitron;font-size:12px;color:#00d4ff">${humid}%</div><div style="font-size:6px;color:#3a6080;margin-top:1px;letter-spacing:1px">NEM</div></div><div style="background:rgba(0,180,255,0.05);border:1px solid rgba(0,180,255,0.1);padding:7px;text-align:center"><div style="font-family:Orbitron;font-size:12px;color:#00d4ff">${wind}</div><div style="font-size:6px;color:#3a6080;margin-top:1px;letter-spacing:1px">RÜZGAR</div></div></div></div><button class="btn" onclick="initWxUI()">🔄 YENİLE</button>`;
+    speak(`${city2} için hava durumu: ${temp} derece, ${desc}`);
+  }catch(e){el.innerHTML=`<div style="text-align:center;padding:16px"><div style="color:#ff4444;margin-bottom:8px">Hava durumu alınamadı.</div><button class="btn" onclick="initWxUI()">Tekrar dene</button></div>`;}
+}
+function initWxUI(){document.getElementById('wxContent').innerHTML=`<div style="text-align:center;padding:14px"><button class="btn" onclick="getWx()" style="max-width:200px;margin:0 auto 7px">📍 KONUMUMU KULLAN</button><div style="font-size:7px;color:#3a6080;margin:6px 0;letter-spacing:1px">veya şehir girin:</div><div style="display:flex;gap:5px"><input id="cityInp" placeholder="Şehir..." style="margin-bottom:0;flex:1"><button class="btn" onclick="getWxCity()" style="width:auto;padding:7px 9px;margin:0;white-space:nowrap">ARA</button></div></div>`;}
+
+// ── FINANCE ──
+async function getRates(){
+  const el=document.getElementById('ratesContent');el.innerHTML='<div style="text-align:center;color:#3a6080;padding:16px;font-size:10px">Yükleniyor...</div>';
+  try{const r=await fetch('https://api.exchangerate-api.com/v4/latest/USD');const d=await r.json();
+    const pairs=[['TRY','₺'],['EUR','€'],['GBP','£'],['JPY','¥'],['CHF','₣'],['SAR','﷼']];
+    el.innerHTML=`<div style="font-size:7px;color:#3a6080;letter-spacing:2px;margin-bottom:8px">DÖVİZ KURLARI (1 USD)</div>${pairs.map(([k,s])=>`<div style="background:rgba(0,10,24,0.9);border:1px solid rgba(0,180,255,0.12);border-left:2px solid #d4a843;padding:9px 11px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:10px;color:#d4a843;letter-spacing:1px">${s} ${k}</span><span style="font-family:Orbitron;font-size:14px;color:#00d4ff">${(d.rates[k]||0).toFixed(2)}</span></div>`).join('')}<div style="font-size:6px;color:#2a4060;margin-top:6px">Son güncelleme: ${new Date().toLocaleTimeString('tr-TR')}</div>`;}
+  catch(e){el.innerHTML='<div style="text-align:center;color:#ff4444;padding:16px">Kur bilgisi alınamadı.</div>';}
+}
+
+// ── CAMERA ──
+function loadImg(inp){const file=inp.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{imgB64=e.target.result.split(',')[1];document.getElementById('imgEl').src=e.target.result;document.getElementById('imgPreview').style.display='block';document.getElementById('imgResult').style.display='none';};reader.readAsDataURL(file);}
+async function analyzeImg(type){
+  if(!imgB64){toast('Önce fotoğraf seçin!');return;}
+  const el=document.getElementById('imgResult');el.style.display='block';el.textContent='Analiz ediliyor...';
+  const pr={genel:'Bu görüntüyü kapsamlı analiz et. Türkçe yaz.',nesne:'Tüm nesneleri listele. Türkçe yaz.',metin:'Tüm metinleri çıkar. Türkçe yaz.',duygu:'Duygu ve ifadeleri analiz et. Türkçe yaz.'};
+  try{const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ},body:JSON.stringify({model:'llama-3.2-11b-vision-preview',max_tokens:500,messages:[{role:'user',content:[{type:'image_url',image_url:{url:`data:image/jpeg;base64,${imgB64}`}},{type:'text',text:'Sen JARVIS görü sistemisin. '+pr[type]}]}]})});const d=await r.json();el.textContent=d?.choices?.[0]?.message?.content||'Analiz tamamlanamadı.';}
+  catch(e){el.textContent='Analiz hatası.';}
+}
+
+// ── MOOD ──
+function selMoodFn(e,l,btn){selMoodV=e;selMoodL=l;document.querySelectorAll('.moodBtn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');}
+function saveMood(){if(!selMoodV){toast('Ruh hali seçin!');return;}moods.unshift({id:Date.now(),mood:selMoodV,label:selMoodL,note:document.getElementById('moodNote').value,time:new Date().toLocaleString('tr-TR')});localStorage.setItem('jv6_moods',JSON.stringify(moods));document.getElementById('moodNote').value='';selMoodV='';selMoodL='';document.querySelectorAll('.moodBtn').forEach(b=>b.classList.remove('sel'));renderMoods();toast('Kaydedildi!');}
+function renderMoods(){const list=document.getElementById('moodList');if(!moods.length){list.innerHTML='<div style="text-align:center;color:#2a4060;font-size:10px;padding:16px">Henüz kayıt yok.</div>';return;}list.innerHTML=moods.slice(0,15).map(m=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(0,180,255,0.06)"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:18px">${m.mood}</span><div><div style="font-size:10px;color:#a0d8ef">${m.label}${m.note?' — '+m.note:''}</div><div style="font-size:6px;color:#2a4060">${m.time}</div></div></div><button class="btnSm" style="border-color:#ff4444;color:#ff4444" onclick="delMood(${m.id})">SİL</button></div>`).join('');}
+function delMood(id){moods=moods.filter(m=>m.id!==id);localStorage.setItem('jv6_moods',JSON.stringify(moods));renderMoods();}
+
+// ── VAULT ──
+function saveVault(){localStorage.setItem('jv6_vault',JSON.stringify(vault));}
+function addVault(){const s=document.getElementById('vSvc').value.trim(),u=document.getElementById('vUsr').value.trim(),p=document.getElementById('vPass').value.trim();if(!s||!p)return;vault.push({id:Date.now(),service:s,user:u,pass:p,note:document.getElementById('vNote').value});['vSvc','vUsr','vPass','vNote'].forEach(id=>document.getElementById(id).value='');saveVault();renderVault();toast('Kasa güncellendi!');}
+function delVault(id){vault=vault.filter(v=>v.id!==id);saveVault();renderVault();}
+function copyTxt(t){navigator.clipboard.writeText(t).then(()=>toast('Kopyalandı!')).catch(()=>toast('Kopyalanamadı.'));}
+function genPass(){const c='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';let p='';for(let i=0;i<16;i++)p+=c[Math.floor(Math.random()*c.length)];document.getElementById('vPass').value=p;document.getElementById('vPass').type='text';}
+function togglePassV(id,btn){const inp=document.getElementById('vp_'+id);inp.type=inp.type==='password'?'text':'password';btn.textContent=inp.type==='password'?'👁':'🙈';}
+function renderVault(){const list=document.getElementById('vaultList');if(!vault.length){list.innerHTML='<div style="text-align:center;color:#2a4060;font-size:10px;padding:16px">Kasa boş.</div>';return;}list.innerHTML=vault.map(v=>`<div class="card cardGold"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><span style="font-size:10px;color:#d4a843">🔐 ${v.service}</span><button class="btnSm" style="border-color:#ff4444;color:#ff4444" onclick="delVault(${v.id})">SİL</button></div>${v.user?`<div style="font-size:9px;color:#8ecae6;margin-bottom:3px">👤 ${v.user} <button class="btnSm" style="border-color:#00d4ff;color:#00d4ff" onclick="copyTxt('${v.user}')">KOPYALA</button></div>`:''}<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px"><input id="vp_${v.id}" type="password" value="${v.pass}" readonly style="flex:1;background:transparent;border:none;color:#a0d8ef;font-family:'Share Tech Mono',monospace;font-size:10px;padding:0;margin:0;cursor:default"><button class="btnSm" style="border-color:#3a7090;color:#3a7090" onclick="togglePassV(${v.id},this)">👁</button><button class="btnSm" style="border-color:#00d4ff;color:#00d4ff" onclick="copyTxt('${v.pass}')">KOPYALA</button></div>${v.note?`<div style="font-size:8px;color:#3a6080">${v.note}</div>`:''}</div>`).join('');}
+
+// ── CALC ──
+function calc(btn){const disp=document.getElementById('cDisp'),expr=document.getElementById('cExpr');if(btn==='C'){calcVal='0';calcPrev='';calcOp='';calcNew=true;disp.textContent='0';expr.textContent='';return;}if(btn==='±'){calcVal=String(-parseFloat(calcVal)||0);disp.textContent=calcVal;return;}if(btn==='%'){calcVal=String(parseFloat(calcVal)/100);disp.textContent=calcVal;return;}if(['+','-','*','/'].includes(btn)){calcPrev=calcVal;calcOp=btn;calcNew=true;expr.textContent=calcVal+(btn==='*'?'×':btn==='/'?'÷':btn);return;}if(btn==='='){if(!calcOp)return;const a=parseFloat(calcPrev),b=parseFloat(calcVal);let r;if(calcOp==='+')r=a+b;else if(calcOp==='-')r=a-b;else if(calcOp==='*')r=a*b;else if(calcOp==='/')r=b!==0?a/b:0;expr.textContent=calcPrev+(calcOp==='*'?'×':calcOp==='/'?'÷':calcOp)+calcVal+'=';calcVal=String(parseFloat(r.toFixed(10)));calcOp='';calcPrev='';calcNew=true;disp.textContent=calcVal;return;}if(btn==='.'){if(calcNew){calcVal='0.';calcNew=false;}else if(!calcVal.includes('.'))calcVal+='.';disp.textContent=calcVal;return;}if(calcNew){calcVal=btn;calcNew=false;}else{calcVal=calcVal==='0'?btn:calcVal+btn;}disp.textContent=calcVal;}
+async function aiCalc(){const q=document.getElementById('aiCalcInp').value.trim();if(!q)return;const el=document.getElementById('aiCalcRes');el.style.display='block';el.textContent='Hesaplanıyor...';try{const r=await groqCall('Hesap makinesi asistanısın. Kısa net Türkçe yanıt ver.',[{role:'user',content:q}],300);el.textContent=r;}catch(e){el.textContent='Hata.';}}
+
+// ── SYSTEM ──
+function renderSys(){
+  const el=document.getElementById('sysInfo');if(!el)return;
+  const info=[['MODEL','Groq LLaMA 3.3 70B'],['VERSİYON','JARVIS v6.0'],['DURUM','TAM AKTİF'],['HAFIZA',Object.keys(mem).length+' kayıt'],['NOTLAR',notes.length+' adet'],['GÖREVLER',tasks.length+' ('+tasks.filter(t=>t.done).length+' tamamlandı)'],['ALARMLAR',alarms.length+' adet'],['ETKİNLİKLER',events.length+' adet'],['RUH HALİ',moods.length+' kayıt'],['KASA',vault.length+' kayıt'],['SES',voiceOn?'AÇIK':'KAPALI']];
+  el.innerHTML=info.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,180,255,0.05);font-size:9px"><span style="color:#3a6080">${k}</span><span style="color:#00d4ff">${v}</span></div>`).join('');
+}
+
+// ── MEMORY ──
+function saveMem(){localStorage.setItem('jv6_mem',JSON.stringify(mem));}
+function renderMem(){const list=document.getElementById('memList'),btn=document.getElementById('clrMemBtn');const keys=Object.keys(mem);if(!keys.length){list.innerHTML='<div style="text-align:center;color:#2a4060;font-size:10px;padding:16px">Henüz bilgi yok.<br>Konuştukça JARVIS öğrenir.</div>';btn.style.display='none';return;}list.innerHTML=keys.map(k=>`<div class="card" style="margin-bottom:5px"><div style="display:flex;align-items:center;gap:7px"><span style="font-size:7px;color:#00d4ff;flex-shrink:0">${k.toUpperCase()}</span><span style="flex:1;font-size:11px;color:#8ecae6;font-family:system-ui">${mem[k]}</span><button class="btnSm" style="border-color:#ff4444;color:#ff4444" onclick="delMemKey('${k}')">SİL</button></div></div>`).join('');btn.style.display='block';}
+function delMemKey(k){delete mem[k];saveMem();renderMem();}
+function clearMem(){mem={};hist=[];saveMem();renderMem();addMsg('jarvis','Hafıza sıfırlandı efendim.');}
+
+// ── TABS ──
+const TABS=['dashboard','tasks','notes','calendar','alarm','weather','finance','camera','mood','vault','calc','sys','mem','briefing'];
+function sw(name,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+  else{const idx=TABS.indexOf(name);if(idx>=0)document.querySelectorAll('.tab')[idx].classList.add('active');}
+  TABS.forEach(id=>{const t=document.getElementById('tab-'+id);if(t){t.style.display=id===name?'flex':'none';if(id===name)t.style.flexDirection='column';}});
+  if(name==='dashboard'){setTimeout(()=>{initDashCanvas();},100);}
+  if(name==='sys')renderSys();
+  if(name==='mem')renderMem();
+  if(name==='notes')renderNotes();
+  if(name==='tasks'){renderTasks();updateDashTasks();}
+  if(name==='alarm')renderAlarms();
+  if(name==='calendar')renderCal();
+  if(name==='mood')renderMoods();
+  if(name==='vault')renderVault();
+  if(name!=='dashboard'&&radarAnim){cancelAnimationFrame(radarAnim);radarAnim=null;}
+}
+
+// ── BRIEFING ──
+async function doBriefing(){
+  const el=document.getElementById('briefingContent');
+  el.innerHTML='<div style="text-align:center;color:#3a6080;padding:16px;font-size:10px">Hazırlanıyor...</div>';
+  const now=new Date();
+  const taskSum=tasks.filter(t=>!t.done).length;
+  const doneSum=tasks.filter(t=>t.done).length;
+  const alSum=alarms.filter(a=>a.on).length;
+  const todayEvs=events.filter(e=>e.date===now.toISOString().split('T')[0]);
+  const recentMood=moods[0]?moods[0].mood+' '+moods[0].label:'bilinmiyor';
+  const topTasks=tasks.filter(t=>!t.done).slice(0,3).map(t=>t.text).join(', ')||'Yok';
+  
+  const prompt=`Şu bilgilere göre günlük brifing hazırla:
+Tarih: ${now.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+Saat: ${now.toLocaleTimeString('tr-TR')}
+Aktif görev: ${taskSum} (${doneSum} tamamlandı), En önemli görevler: ${topTasks}
+Aktif alarm: ${alSum}
+Bugünkü etkinlikler: ${todayEvs.map(e=>e.title).join(', ')||'Yok'}
+Son ruh hali: ${recentMood}
+Notlar: ${notes.length}, Şifre kasası: ${vault.length} kayıt
+
+JARVIS olarak: kısa, motive edici, analitik bir günlük özet ver. Gün için öneriler sun. Türkçe, sade metin, "efendim" hitabıyla.`;
+
+  try{
+    const r=await groqCall('Sen JARVIS yapay zeka asistanısın. En akıllı, en analitik versiyonunsun.',[{role:'user',content:prompt}],600);
+    el.innerHTML=`<div style="background:rgba(0,10,24,0.9);border:1px solid rgba(0,180,255,0.2);border-left:2px solid #00d4ff;padding:12px">
+      <div style="font-size:7px;letter-spacing:2px;color:#00d4ff;margin-bottom:8px">GÜNLÜK BRİFİNG · ${now.toLocaleDateString('tr-TR')}</div>
+      <div style="font-size:12px;line-height:1.8;font-family:system-ui;color:#a0d8ef">${r}</div>
+      <button class="btn" onclick="speak(document.querySelector('#briefingContent .brief-text')||'${r.replace(/'/g,"\'")})" style="margin-top:8px">🔊 SESLI OKU</button>
+    </div>`;
+    const dashLast=document.getElementById('lastJarvisDash');if(dashLast)dashLast.textContent=r.substring(0,100)+'...';
+  }catch(e){el.innerHTML='<div style="color:#ff4444;text-align:center;padding:16px">Brifing alınamadı.</div>';}
+}
+
+// ── UTILS ──
+function hKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+function grow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,80)+'px';}
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
+
+// ── STATS ANIMATION ──
+function animStats(){
+  const cpu=58+Math.floor(Math.random()*25),mem2=38+Math.floor(Math.random()*22),net=65+Math.floor(Math.random()*30);
+  ['cpu','mem','net'].forEach((id,i)=>{const v=[cpu,mem2,net][i];const col=['#00d4ff','#00ff88','#ffaa00'][i];['V','B','VS','BS'].forEach(sfx=>{const el=document.getElementById(id+sfx);if(el){if(sfx.includes('V'))el.textContent=v+'%';else el.style.width=v+'%';}});});
+}
+setInterval(animStats,3000);animStats();
+
+// ── CLOCK ──
+function startClock(){setInterval(()=>{const now=new Date(),ts=now.toLocaleTimeString('tr-TR'),ds=now.toLocaleDateString('tr-TR',{weekday:'short',day:'numeric',month:'short'});['clock','bigClock'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=ts;});['dateEl','bigDate'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=ds;});},1000);}
+
+// ── INIT ──
+window.onload=()=>{
+  startClock();
+  setTimeout(initDashCanvas,200);
+  updateDashTasks();updateDashNote();
+  getWx();
+  const name=mem['isim']||mem['ad'];
+  const g=name?`Tekrar hoş geldiniz ${name} efendim. Tüm sistemler hazır.`:'Sistemler aktif efendim. J.A.R.V.I.S v6.0 hizmetinizde. Merkeze dokunun veya yazın.';
+  addMsg('jarvis',g);lastJ=g;
+  const dl=document.getElementById('lastJarvisDash');if(dl)dl.textContent=g;
+  setTimeout(()=>speak(g),1000);
+};
+</script>
+</body>
+</html>
